@@ -11,8 +11,7 @@ icap_server:
     cnn: True
   content_min_length: 50
   replacement_http_method: POST
-  # replacement_url: http://oldjava.org/cgi-bin/_post
-  replacement_url: http://opentc.oldjava.org/classifier/request_submit/
+  replacement_url: http://opentc.example.com/classifier/request_submit/
   converter:
     "text/plain": text
     "message/rfc822": text
