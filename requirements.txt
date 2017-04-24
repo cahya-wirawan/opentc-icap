@@ -1,0 +1,6 @@
+opentc-util>=0.1.2
+PyYAML>=3.12
+pyicap>=1.0b1
+python-magic>=0.4.13
+python-multipart>=0.0.2
+textract>=1.5.0
