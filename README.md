@@ -1,5 +1,5 @@
 
-# The ICAP Server for OpenTC
+# ICAP Server for the OpenTC
 The Internet Content Adaptation Protocol (ICAP) is a lightweight HTTP-like protocol specified in RFC 3507 which 
 is used to extend transparent proxy servers. It is used generally for a virus scanner or content filtering. 
 
