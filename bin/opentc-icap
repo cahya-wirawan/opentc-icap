@@ -1,0 +1,55 @@
+#! /usr/bin/env python
+import os.path
+import logging
+import argparse
+from opentc.util import setup_logging, setup_config
+from opentc.util.client import Client
+from opentc.icap.server import ThreadingSimpleServer, ICAPHandler
+
+if __name__ == '__main__':
+    config_directories = [os.curdir, os.path.expanduser("~/.opentc-icap"), "/etc/opentc-icap",
+                          os.environ.get("ICAPSERVER_CONF_DIR")]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--icap_server_address", help="define the address of the icap server")
+    parser.add_argument("-A", "--opentc_server_address", help="define the address of the opentc server")
+    parser.add_argument("-C", "--configuration_file", help="set the configuration file")
+    parser.add_argument("-l", "--log_configuration_file", help="set the log configuration file")
+    parser.add_argument("-p", "--icap_server_port", help="define the port number which the icap server uses to listen")
+    parser.add_argument("-P", "--opentc_server_port", help="define the port number which "
+                                                           "the opentc server uses to listen")
+    args = parser.parse_args()
+    setup_logging(config_directories=config_directories)
+    logger = logging.getLogger(__name__)
+    cfg = setup_config(config_directories=config_directories,
+                       config_file=args.configuration_file,
+                       default_filename="opentc-icap.yml")
+
+    if args.icap_server_address:
+        icap_server_address = args.icap_server_address
+    else:
+        icap_server_address = cfg["icap_server"]["address"]
+    if args.icap_server_port:
+        icap_server_port = args.icap_server_port
+    else:
+        icap_server_port = cfg["icap_server"]["port"]
+
+    if args.opentc_server_address:
+        opentc_server_address = args.opentc_server_address
+    else:
+        opentc_server_address = cfg["opentc_server"]["address"]
+    if args.opentc_server_port:
+        opentc_server_port = args.opentc_server_port
+    else:
+        opentc_server_port = cfg["opentc_server"]["port"]
+
+    server = ThreadingSimpleServer((icap_server_address.encode('utf-8'), icap_server_port), ICAPHandler)
+    server.opentc = dict()
+    server.opentc["client"] = Client(address=opentc_server_address, port=opentc_server_port)
+    server.opentc["config"] = cfg["icap_server"]
+    try:
+        while 1:
+            server.handle_request()
+    except KeyboardInterrupt:
+        logger.info("The icap server quits")
+
+
