@@ -21,7 +21,7 @@ decide if the outgoing traffic should be blocked or allowed.
 
 
 ## TODO
-- the icap server should monitor the availability of the OpenTC server. In case it is not up or running, thís icap 
+- the icap server should monitor the availability of the OpenTC server. In case it is not up or running, this icap 
 server should try to reconnect it again several times in difference interval (i.e: the interval of the first 3 
 reconnection could be 10 seconds, and after 3 unsuccessful attempts to reconnect, the interval connection time 
 should be changed to 300 seconds). Currently, the icap server has to be restarted manually after the OpenTC server
