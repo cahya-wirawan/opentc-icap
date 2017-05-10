@@ -15,6 +15,7 @@ icap_server:
   converter:
     "text/plain": text
     "message/rfc822": text
+    "application/x-www-form-urlencoded": text
     "application/pdf": textract
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": textract
 

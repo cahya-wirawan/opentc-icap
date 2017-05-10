@@ -25,9 +25,8 @@ class ICAPHandler(BaseICAPRequestHandler):
 
     def opentc_OPTIONS(self):
         try:
-            response = self.server.opentc["client"].command("PING\n")
+            response = self.server.opentc["client"].ping()
             response = json.loads(response.decode('utf-8'))
-            self.logger.debug("REQMOD Ping response: {}".format(response))
             if response["status"] == "OK":
                 self.logger.debug("OPTIONS Ping response: {}".format(response))
             else:
@@ -45,13 +44,6 @@ class ICAPHandler(BaseICAPRequestHandler):
         self.last_form_field = None
         self.big_chunk = b''
         self.content_analysis_results = dict()
-
-        try:
-            response = self.server.opentc["client"].command("PING\n")
-            response = json.loads(response.decode('utf-8'))
-            self.logger.debug("REQMOD Ping response: {}".format(response))
-        except Exception as err:
-            self.logger.error(traceback.format_exc())
 
         def on_part_begin():
             self.multipart_data = dict()
@@ -142,6 +134,8 @@ class ICAPHandler(BaseICAPRequestHandler):
         else:
             # Parse the Content-Type header to get the multipart boundary.
             content_type, params = parse_options_header(self.enc_req_headers[b'content-type'][0])
+            content_type = [content_type.decode("utf-8")]
+            self.logger.debug("Content-type: {}".format(content_type[0]))
             boundary = params.get(b'boundary')
             parser = None
             if boundary is not None:
