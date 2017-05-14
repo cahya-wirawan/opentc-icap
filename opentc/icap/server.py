@@ -23,16 +23,16 @@ class ICAPHandler(BaseICAPRequestHandler):
     logger = logging.getLogger(__name__)
     remove_newline = re.compile(b'\r?\n')
 
-    def opentc_resp_OPTIONS(self):
+    def opentcresp_OPTIONS(self):
         self.set_icap_response(200)
         self.set_icap_header(b'Methods', b'RESPMOD')
         self.set_icap_header(b'Preview', b'0')
         self.send_headers(False)
 
-    def opentc_resp_RESPMOD(self):
+    def opentcresp_RESPMOD(self):
         self.no_adaptation_required()
 
-    def opentc_req_OPTIONS(self):
+    def opentcreq_OPTIONS(self):
         try:
             response = self.server.opentc["client"].ping()
             response = json.loads(response.decode('utf-8'))
@@ -48,7 +48,7 @@ class ICAPHandler(BaseICAPRequestHandler):
         self.set_icap_header(b'Service', b'PyICAP Server 1.0')
         self.send_headers(False)
 
-    def opentc_req_REQMOD(self):
+    def opentcreq_REQMOD(self):
         self.multipart_data = None
         self.last_form_field = None
         self.big_chunk = b''
