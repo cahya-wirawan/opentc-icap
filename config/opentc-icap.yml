@@ -16,8 +16,19 @@ icap_server:
     "text/plain": text
     "message/rfc822": text
     "application/x-www-form-urlencoded": text
-    "application/pdf": textract
+    "application/msword": textract
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": textract
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": textract
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": textract
+    "application/epub+zip": textract
+    "application/json": textract
+    "application/pdf": textract
+    "application/postscript": textract
+    "application/rtf": textract
+    "application/excel": textract
+    "image/tiff": textract
+    "text/html": textract
+    "text/csv": textract
 
 opentc_server:
   address: localhost
