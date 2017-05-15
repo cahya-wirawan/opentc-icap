@@ -23,7 +23,16 @@ class ICAPHandler(BaseICAPRequestHandler):
     logger = logging.getLogger(__name__)
     remove_newline = re.compile(b'\r?\n')
 
-    def opentc_OPTIONS(self):
+    def opentc_resp_OPTIONS(self):
+        self.set_icap_response(200)
+        self.set_icap_header(b'Methods', b'RESPMOD')
+        self.set_icap_header(b'Preview', b'0')
+        self.send_headers(False)
+
+    def opentc_resp_RESPMOD(self):
+        self.no_adaptation_required()
+
+    def opentc_req_OPTIONS(self):
         try:
             response = self.server.opentc["client"].ping()
             response = json.loads(response.decode('utf-8'))
@@ -39,7 +48,7 @@ class ICAPHandler(BaseICAPRequestHandler):
         self.set_icap_header(b'Service', b'PyICAP Server 1.0')
         self.send_headers(False)
 
-    def opentc_REQMOD(self):
+    def opentc_req_REQMOD(self):
         self.multipart_data = None
         self.last_form_field = None
         self.big_chunk = b''
@@ -155,7 +164,7 @@ class ICAPHandler(BaseICAPRequestHandler):
                 if chunk == b'':
                     break
                 self.big_chunk += chunk
-
+            result = None
             if boundary is not None:
                 size = len(self.big_chunk)
                 start = 0
@@ -174,23 +183,24 @@ class ICAPHandler(BaseICAPRequestHandler):
                 self.content_analysis_results[name] = result
 
             is_allowed = True
-            for result in self.content_analysis_results:
-                if self.content_analysis_results[result] is None:
-                    continue
-                for classifier in self.server.opentc["config"]["classifier_status"]:
-                    if self.server.opentc["config"]["classifier_status"][classifier] is False:
+            if result is not None:
+                for result in self.content_analysis_results:
+                    if self.content_analysis_results[result] is None:
                         continue
-                    for restricted_class in self.server.opentc["config"]["restricted_classes"]:
-                        self.logger.debug("{}: result:{}, classifier:{}".format(restricted_class, result, classifier))
-                        if restricted_class in self.content_analysis_results[result][classifier]:
-                            is_allowed = False
+                    for classifier in self.server.opentc["config"]["classifier_status"]:
+                        if self.server.opentc["config"]["classifier_status"][classifier] is False:
+                            continue
+                        for restricted_class in self.server.opentc["config"]["restricted_classes"]:
+                            self.logger.debug("{}: result:{}, classifier:{}".format(restricted_class, result, classifier))
+                            if restricted_class in self.content_analysis_results[result][classifier]:
+                                is_allowed = False
+                                break
+                            else:
+                                is_allowed = True
+                        if is_allowed is True:
                             break
-                        else:
-                            is_allowed = True
-                    if is_allowed is True:
+                    if is_allowed is False:
                         break
-                if is_allowed is False:
-                    break
             if is_allowed:
                 self.set_enc_request(b' '.join(self.enc_req))
                 self.send_headers(True)
@@ -230,6 +240,8 @@ class ICAPHandler(BaseICAPRequestHandler):
         if content is None:
             return None
         response = client.predict_stream(content)
+        if response is None:
+            return None
         result = json.loads(response.decode('utf-8'))["result"]
         self.logger.debug("content_analyse predict_stream result: {}".format(result))
         return result
