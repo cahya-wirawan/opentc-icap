@@ -164,7 +164,7 @@ class ICAPHandler(BaseICAPRequestHandler):
                 if chunk == b'':
                     break
                 self.big_chunk += chunk
-            result = None
+
             if boundary is not None:
                 size = len(self.big_chunk)
                 start = 0
@@ -183,24 +183,23 @@ class ICAPHandler(BaseICAPRequestHandler):
                 self.content_analysis_results[name] = result
 
             is_allowed = True
-            if result is not None:
-                for result in self.content_analysis_results:
-                    if self.content_analysis_results[result] is None:
+            for result in self.content_analysis_results:
+                if self.content_analysis_results[result] is None:
+                    continue
+                for classifier in self.server.opentc["config"]["classifier_status"]:
+                    if self.server.opentc["config"]["classifier_status"][classifier] is False:
                         continue
-                    for classifier in self.server.opentc["config"]["classifier_status"]:
-                        if self.server.opentc["config"]["classifier_status"][classifier] is False:
-                            continue
-                        for restricted_class in self.server.opentc["config"]["restricted_classes"]:
-                            self.logger.debug("{}: result:{}, classifier:{}".format(restricted_class, result, classifier))
-                            if restricted_class in self.content_analysis_results[result][classifier]:
-                                is_allowed = False
-                                break
-                            else:
-                                is_allowed = True
-                        if is_allowed is True:
+                    for restricted_class in self.server.opentc["config"]["restricted_classes"]:
+                        self.logger.debug("{}: result:{}, classifier:{}".format(restricted_class, result, classifier))
+                        if restricted_class in self.content_analysis_results[result][classifier]:
+                            is_allowed = False
                             break
-                    if is_allowed is False:
+                        else:
+                            is_allowed = True
+                    if is_allowed is True:
                         break
+                if is_allowed is False:
+                    break
             if is_allowed:
                 self.set_enc_request(b' '.join(self.enc_req))
                 self.send_headers(True)

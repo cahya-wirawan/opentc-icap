@@ -47,6 +47,7 @@ if __name__ == '__main__':
     server.opentc["client"] = Client(address=opentc_server_address, port=opentc_server_port)
     server.opentc["config"] = cfg["icap_server"]
     try:
+        print("Start the icap server")
         while 1:
             server.handle_request()
     except KeyboardInterrupt:
