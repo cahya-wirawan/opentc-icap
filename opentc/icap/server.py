@@ -33,6 +33,8 @@ class ICAPHandler(BaseICAPRequestHandler):
         self.no_adaptation_required()
 
     def opentc_req_OPTIONS(self):
+        # disable the ping function due to race condition
+        """
         try:
             response = self.server.opentc["client"].ping()
             response = json.loads(response.decode('utf-8'))
@@ -43,6 +45,7 @@ class ICAPHandler(BaseICAPRequestHandler):
         except BrokenPipeError as err:
             self.logger.error("Exception: {}".format(err))
             self.logger.error(traceback.format_exc())
+        """
         self.set_icap_response(200)
         self.set_icap_header(b'Methods', b'REQMOD')
         self.set_icap_header(b'Service', b'PyICAP Server 1.0')
