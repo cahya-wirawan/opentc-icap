@@ -164,7 +164,7 @@ class ICAPHandler(BaseICAPRequestHandler):
                 if chunk == b'':
                     break
                 self.big_chunk += chunk
-
+            result = None
             if boundary is not None:
                 size = len(self.big_chunk)
                 start = 0
@@ -183,23 +183,24 @@ class ICAPHandler(BaseICAPRequestHandler):
                 self.content_analysis_results[name] = result
 
             is_allowed = True
-            for result in self.content_analysis_results:
-                if self.content_analysis_results[result] is None:
-                    continue
-                for classifier in self.server.opentc["config"]["classifier_status"]:
-                    if self.server.opentc["config"]["classifier_status"][classifier] is False:
+            if result is not None:
+                for result in self.content_analysis_results:
+                    if self.content_analysis_results[result] is None:
                         continue
-                    for restricted_class in self.server.opentc["config"]["restricted_classes"]:
-                        self.logger.debug("{}: result:{}, classifier:{}".format(restricted_class, result, classifier))
-                        if restricted_class in self.content_analysis_results[result][classifier]:
-                            is_allowed = False
+                    for classifier in self.server.opentc["config"]["classifier_status"]:
+                        if self.server.opentc["config"]["classifier_status"][classifier] is False:
+                            continue
+                        for restricted_class in self.server.opentc["config"]["restricted_classes"]:
+                            self.logger.debug("{}: result:{}, classifier:{}".format(restricted_class, result, classifier))
+                            if restricted_class in self.content_analysis_results[result][classifier]:
+                                is_allowed = False
+                                break
+                            else:
+                                is_allowed = True
+                        if is_allowed is True:
                             break
-                        else:
-                            is_allowed = True
-                    if is_allowed is True:
+                    if is_allowed is False:
                         break
-                if is_allowed is False:
-                    break
             if is_allowed:
                 self.set_enc_request(b' '.join(self.enc_req))
                 self.send_headers(True)
@@ -239,6 +240,8 @@ class ICAPHandler(BaseICAPRequestHandler):
         if content is None:
             return None
         response = client.predict_stream(content)
+        if response is None:
+            return None
         result = json.loads(response.decode('utf-8'))["result"]
         self.logger.debug("content_analyse predict_stream result: {}".format(result))
         return result
