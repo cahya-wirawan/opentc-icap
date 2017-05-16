@@ -39,7 +39,7 @@ setup(
         'PyYAML',
         'textract'
     ],
-    scripts=[],
+    scripts=['bin/opentc-icap'],
     data_files=[('/etc/opentc-icap', ['config/opentc-icap.yml', 'config/logging.yml'])],
     include_package_data=True,
     zip_safe=False)
