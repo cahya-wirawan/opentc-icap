@@ -11,6 +11,7 @@ import traceback
 import json
 import textract
 import tempfile
+from urllib.parse import urlparse
 from multipart.multipart import parse_options_header
 from pyicap import ICAPServer, BaseICAPRequestHandler
 
@@ -22,6 +23,7 @@ class ThreadingSimpleServer(socketserver.ThreadingMixIn, ICAPServer):
 class ICAPHandler(BaseICAPRequestHandler):
     logger = logging.getLogger(__name__)
     remove_newline = re.compile(b'\r?\n')
+    forbidden_list = []
 
     def opentc_resp_OPTIONS(self):
         self.set_icap_response(200)
@@ -107,6 +109,15 @@ class ICAPHandler(BaseICAPRequestHandler):
 
         self.set_icap_response(200)
 
+        url = urlparse(self.enc_req[1])
+        if len(ICAPHandler.forbidden_list) == 0:
+            for forbidden_content in self.server.opentc["config"]["forbidden_content_list"]:
+                ICAPHandler.forbidden_list.append(re.compile(forbidden_content.encode("utf-8")))
+        match_string = self.check_content(ICAPHandler.forbidden_list, url.query)
+        if match_string:
+            self.reject_request(match_string.decode("utf-8"))
+            return
+
         # self.set_enc_request(b' '.join(self.enc_req))
         for h in self.enc_req_headers:
             for v in self.enc_req_headers[h]:
@@ -164,6 +175,11 @@ class ICAPHandler(BaseICAPRequestHandler):
                 if chunk == b'':
                     break
                 self.big_chunk += chunk
+
+            match_string = self.check_content(ICAPHandler.forbidden_list, url.path)
+            if match_string:
+                self.reject_request(match_string.decode("utf-8"))
+                return
 
             if boundary is not None:
                 size = len(self.big_chunk)
@@ -259,3 +275,22 @@ class ICAPHandler(BaseICAPRequestHandler):
     def log_message(self, format, *args):
         # Override the pyicap logger function
         self.logger.debug("{}: {}".format(self.client_address[0], args))
+
+    def check_content(self, forbidden_list, content):
+        for forbidden in forbidden_list:
+            forbidden_match = forbidden.search(content)
+            if forbidden_match:
+                return forbidden_match.group(0)
+        return None
+
+    def reject_request(self, found_data):
+        content = "result={}".format(found_data).encode("utf-8")
+        enc_req = self.enc_req[:]
+        enc_req[0] = self.server.opentc["config"]["forbidden_http_method"].encode("utf-8")
+        enc_req[1] = self.server.opentc["config"]["forbidden_url"].encode("utf-8")
+        self.set_enc_request(b' '.join(enc_req))
+        self.enc_headers[b"content-type"] = [b"application/x-www-form-urlencoded"]
+        self.enc_headers[b"content-length"] = [str(len(content)).encode("utf-8")]
+        self.send_headers(True)
+        self.write_chunk(content)
+        return

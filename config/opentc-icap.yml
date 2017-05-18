@@ -12,6 +12,11 @@ icap_server:
   content_min_length: 50
   replacement_http_method: POST
   replacement_url: http://opentc.example.com/classifier/request_submit/
+  forbidden_http_method: POST
+  forbidden_url: http://opentc.example.com/forbidden
+  forbidden_content_list:
+    - 'abcde123'
+    - '\d{4}-\d{2,3}-\d{3}'
   converter:
     "text/plain": text
     "message/rfc822": text
