@@ -11,7 +11,7 @@ icap_server:
     cnn: True
   content_min_length: 50
   replacement_http_method: POST
-  replacement_url: http://opentc.example.com/classifier/request_submit/
+  replacement_url: "http://opentc.example.com/report/"
   whitelist_hostname:
     - 'github.com'
   # blacklist_hostname

@@ -232,7 +232,7 @@ class ICAPHandler(BaseICAPRequestHandler):
                 self.write_chunk(self.big_chunk)
             else:
                 content = json.dumps(self.content_analysis_results)
-                content = "result={}".format(content).encode("utf-8")
+                content = "type=ml&result={}".format(content).encode("utf-8")
                 enc_req = self.enc_req[:]
                 enc_req[0] = self.server.opentc["config"]["replacement_http_method"].encode("utf-8")
                 enc_req[1] = self.server.opentc["config"]["replacement_url"].encode("utf-8")
@@ -296,7 +296,8 @@ class ICAPHandler(BaseICAPRequestHandler):
         return None
 
     def reject_request(self, found_data):
-        content = "result={}".format(found_data).encode("utf-8")
+        content = json.dumps({'string': found_data})
+        content = "type=cf&result={}".format(content).encode("utf-8")
         enc_req = self.enc_req[:]
         enc_req[0] = self.server.opentc["config"]["replacement_http_method"].encode("utf-8")
         enc_req[1] = self.server.opentc["config"]["replacement_url"].encode("utf-8")
