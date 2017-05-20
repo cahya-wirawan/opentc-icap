@@ -187,6 +187,9 @@ class ICAPHandler(BaseICAPRequestHandler):
                     break
                 self.big_chunk += chunk
 
+            if content_type[0] == "application/x-www-form-urlencoded" or \
+                            content_type[0] == "text/plain":
+                self.big_chunk = urllib.parse.unquote_plus(self.big_chunk.decode("utf-8")).encode("utf-8")
             match_string = self.check_content(ICAPHandler.blacklist_data, self.big_chunk)
             if match_string:
                 self.reject_request(match_string.decode("utf-8"))
@@ -249,9 +252,6 @@ class ICAPHandler(BaseICAPRequestHandler):
         if content_type is None or content is None or client is None:
             return None
         self.logger.debug("content_analyse {}".format(content_type[0]))
-        if content_type[0] == "application/x-www-form-urlencoded" or \
-                        content_type[0] == "text/plain":
-            content = urllib.parse.unquote_plus(content.decode("utf-8")).encode("utf-8")
         if len(content) < content_min_length:
             result = None
             self.logger.debug("content_analyse content_min_length < {}".format(content_min_length))
