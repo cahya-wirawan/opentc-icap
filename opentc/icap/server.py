@@ -56,6 +56,7 @@ class ICAPHandler(BaseICAPRequestHandler):
         self.multipart_data = None
         self.last_form_field = None
         self.big_chunk = b''
+        self.big_chunk_unquoted = None
         self.content_analysis_results = dict()
 
         def on_part_begin():
@@ -124,7 +125,8 @@ class ICAPHandler(BaseICAPRequestHandler):
         if match_hostname:
             self.no_adaptation_required()
             return
-        match_string = self.check_content(ICAPHandler.blacklist_data, url.query)
+        query = urllib.parse.unquote_plus(url.query.decode("utf-8")).encode("utf-8")
+        match_string = self.check_content(ICAPHandler.blacklist_data, query)
         if match_string:
             self.reject_request(match_string.decode("utf-8"))
             return
@@ -189,26 +191,42 @@ class ICAPHandler(BaseICAPRequestHandler):
 
             if content_type[0] == "application/x-www-form-urlencoded" or \
                             content_type[0] == "text/plain":
-                self.big_chunk = urllib.parse.unquote_plus(self.big_chunk.decode("utf-8")).encode("utf-8")
-            match_string = self.check_content(ICAPHandler.blacklist_data, self.big_chunk)
+                self.big_chunk_unquoted = urllib.parse.unquote_plus(self.big_chunk.decode("utf-8")).encode("utf-8")
+            if self.big_chunk_unquoted:
+                match_string = self.check_content(ICAPHandler.blacklist_data, self.big_chunk_unquoted)
+            else:
+                match_string = self.check_content(ICAPHandler.blacklist_data, self.big_chunk)
             if match_string:
                 self.reject_request(match_string.decode("utf-8"))
                 return
 
             if boundary is not None:
-                size = len(self.big_chunk)
+                if self.big_chunk_unquoted:
+                    size = len(self.big_chunk_unquoted)
+                else:
+                    size = len(self.big_chunk)
                 start = 0
                 while size > 0:
                     end = min(size, 1024 * 1024)
-                    parser.write(self.big_chunk[start:end])
+                    if self.big_chunk_unquoted:
+                        parser.write(self.big_chunk_unquoted[start:end])
+                    else:
+                        parser.write(self.big_chunk[start:end])
                     size -= end
                     start = end
             else:
-                result = self.content_analyse(
-                    converter=self.server.opentc["config"]["converter"],
-                    content_type=content_type, content=self.big_chunk,
-                    content_min_length=self.server.opentc["config"]["content_min_length"],
-                    client=self.server.opentc["client"])
+                if self.big_chunk_unquoted:
+                    result = self.content_analyse(
+                        converter=self.server.opentc["config"]["converter"],
+                        content_type=content_type, content=self.big_chunk_unquoted,
+                        content_min_length=self.server.opentc["config"]["content_min_length"],
+                        client=self.server.opentc["client"])
+                else:
+                    result = self.content_analyse(
+                        converter=self.server.opentc["config"]["converter"],
+                        content_type=content_type, content=self.big_chunk,
+                        content_min_length=self.server.opentc["config"]["content_min_length"],
+                        client=self.server.opentc["client"])
                 name = "text"
                 self.content_analysis_results[name] = result
 
