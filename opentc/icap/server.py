@@ -14,6 +14,7 @@ import tempfile
 import urllib
 from urllib.parse import urlparse
 from multipart.multipart import parse_options_header
+from multipart.exceptions import MultipartParseError
 from pyicap import ICAPServer, BaseICAPRequestHandler
 
 
@@ -206,14 +207,19 @@ class ICAPHandler(BaseICAPRequestHandler):
                 else:
                     size = len(self.big_chunk)
                 start = 0
-                while size > 0:
-                    end = min(size, 1024 * 1024)
-                    if self.big_chunk_unquoted:
-                        parser.write(self.big_chunk_unquoted[start:end])
-                    else:
-                        parser.write(self.big_chunk[start:end])
-                    size -= end
-                    start = end
+                try:
+                    while size > 0:
+                        end = min(size, 1024 * 1024)
+                        if self.big_chunk_unquoted:
+                            parser.write(self.big_chunk_unquoted[start:end])
+                        else:
+                            parser.write(self.big_chunk[start:end])
+                        size -= end
+                        start = end
+                except MultipartParseError as err:
+                    self.logger.error("Boundary: {}".format(boundary))
+                    self.logger.error("Exception: {}".format(err))
+                    self.logger.error(traceback.format_exc())
             else:
                 if self.big_chunk_unquoted:
                     result = self.content_analyse(
