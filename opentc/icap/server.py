@@ -243,13 +243,16 @@ class ICAPHandler(BaseICAPRequestHandler):
                 for classifier in self.server.opentc["config"]["classifier_status"]:
                     if self.server.opentc["config"]["classifier_status"][classifier] is False:
                         continue
-                    for restricted_class in self.server.opentc["config"]["restricted_classes"]:
-                        self.logger.debug("{}: result:{}, classifier:{}".format(restricted_class, result, classifier))
-                        if restricted_class in self.content_analysis_results[result][classifier]:
-                            is_allowed = False
+                    for prediction_probability in self.content_analysis_results[result][classifier]:
+                        prediction, probability = prediction_probability.split(":")
+                        for restricted_class in self.server.opentc["config"]["restricted_classes"]:
+                            self.logger.debug("{}: result:{}, classifier:{}".
+                                              format(restricted_class, result, classifier))
+                            if restricted_class == prediction:
+                                is_allowed = False
+                                break
+                        if is_allowed is False:
                             break
-                        else:
-                            is_allowed = True
                     if is_allowed is True:
                         break
                 if is_allowed is False:
